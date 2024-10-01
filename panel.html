@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Información de Películas</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Black Ops One', system-ui;
+      background-image: url("https://telegra.ph/file/e780de9cf11caee8b5d2d.jpg");
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #mainContainer {
+      max-width: 90%;
+      background-color: rgba(0, 0, 0, 0.8);
+      border: 2px solid gold;
+      border-radius: 10px;
+      padding: 20px;
+      color: white;
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .panel {
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      margin-bottom: 10px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid gold;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    #consolePanel {
+      margin-top: 20px;
+    }
+
+    #consoleMessages {
+      max-height: 100px;
+      overflow-y: auto;
+      background-color: #1a1a1a;
+      color: white;
+      border: 1px solid gold;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    #successMessage {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 255, 0, 0.7);
+      color: white;
+      border: 1px solid #00ff00;
+      padding: 10px;
+      border-radius: 5px;
+      display: none;
+    }
+
+    .user-item {
+      margin-bottom: 5px;
+      padding: 5px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Información de Películas</h1>
+        <div class="input-group">
+            <label for="movie-search">Buscar película (por título):</label>
+            <input type="text" id="movie-search" placeholder="Buscar película...">
+            <button class="generate-btn" onclick="searchMovie()">Buscar</button>
+        </div>
+
+        <div class="input-group">
+            <label for="movie-id">ID de la película:</label>
+            <input type="text" id="movie-id" placeholder="Ingresar ID de la película">
+        </div>
+
+        <div class="input-group">
+            <label for="iframe-url">URL del iframe:</label>
+            <input type="text" id="iframe-url" placeholder="Ingresar URL del iframe">
+        </div>
+
+        <button class="generate-btn" onclick="generateJSON()">Generar</button>
+        <button class="publish-btn" onclick="publishMovie()">Publicar</button>
+
+        <div class="result-panel" id="result-panel" style="display:none;">
+            <h2>Resultado:</h2>
+            <pre id="json-output" class="language-json"></pre>
+            <button class="copy-btn" onclick="copyToClipboard()">Copiar JSON</button>
+        </div>
+
+        <div class="movie-list-panel" id="movie-list-panel" style="display:none;">
+            <h2>Películas Encontradas:</h2>
+            <div class="movie-list" id="movie-list"></div>
+        </div>
+
+        <div class="message-panel" id="message-panel">
+            <p id="message-text"></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        const apiKey = '1f098c7d68777348425d008055475b88'; // Reemplaza con tu API Key de TMDb
+        let movieData; // Variable para almacenar los datos de la película
+
+        function searchMovie() {
+            // Función para buscar la película
+        }
+
+        function generateJSON() {
+            // Función para generar el JSON
+            const movieId = document.getElementById('movie-id').value;
+            const iframeUrl = document.getElementById('iframe-url').value;
+
+            if (!movieId || !iframeUrl) {
+                showMessage('Por favor, completa todos los campos.', 'error');
+                return;
+            }
+
+            fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&language=es-MX`)
+                .then(response => response.json())
+                .then(data => {
+                    const res = btoa('https://playerwish.com/e/' + iframeUrl);
+                    movieData = {
+                        titulo: data.title,
+                        imb: data.id,
+                        img: `https://image.tmdb.org/t/p/w300${data.poster_path}`,
+                        url: 'https://vpn-movie-ofc.blogspot.com/2024/05/embed_27.html?r=' + res,
+                        categoria: data.genres.map(genre => genre.name),
+                    };
+
+                    document.getElementById('json-output').textContent = JSON.stringify(movieData, null, 2);
+                    Prism.highlightAll(); // Resaltar sintaxis
+                    document.getElementById('result-panel').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('Hubo un error al generar el JSON.', 'error');
+                });
+        }
+
+        function publishMovie() {
+            if (!movieData) {
+                showMessage('No hay datos de película para publicar.', 'error');
+                return;
+            }
+
+            fetch('/publish', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(movieData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Película publicada exitosamente.', 'success');
+                } else {
+                    showMessage('Error al publicar la película.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Hubo un error al intentar publicar la película.', 'error');
+            });
+        }
+
+        function copyToClipboard() {
+            const jsonOutput = document.getElementById('json-output').textContent;
+            navigator.clipboard.writeText(jsonOutput)
+                .then(() => showMessage('JSON copiado al portapapeles.', 'success'))
+                .catch(err => {
+                    console.error('Error al copiar al portapapeles:', err);
+                    showMessage('Error al copiar el JSON.', 'error');
+                });
+        }
+
+        function showMessage(message, type) {
+            const messagePanel = document.getElementById('message-panel');
+            const messageText = document.getElementById('message-text');
+            messageText.textContent = message;
+            messagePanel.className = `message-panel ${type}`;
+            messagePanel.style.display = 'block';
+            setTimeout(() => messagePanel.style.display = 'none', 3000);
+        }
+    </script>
+</body>
+</html>

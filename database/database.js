@@ -1,0 +1,145 @@
+const fs = require('fs');
+
+let data = {};
+
+const databaseFile = './database/database.json';
+
+// Función para cargar la base de datos desde el archivo JSON
+function loadDatabase() {
+  try {
+    if (fs.existsSync(databaseFile)) {
+      const jsonContent = fs.readFileSync(databaseFile, 'utf8');
+      data = JSON.parse(jsonContent);
+    } else {
+      createDefaultDatabase();
+    }
+  } catch (error) {
+    console.error('Error al cargar la base de datos:', error);
+  }
+}
+
+// Función para crear la base de datos por defecto
+function createDefaultDatabase() {
+  const defaultData = {
+    "total": 10000,
+    "user": {
+      "andres": {
+        "gold": 5000,
+        "total": 1000
+      }
+    }
+  };
+
+  try {
+    fs.writeFileSync(databaseFile, JSON.stringify(defaultData, null, 2), 'utf8');
+    data = defaultData;
+    console.log('Archivo de base de datos creado con contenido por defecto.');
+  } catch (error) {
+    console.error('Error al crear el archivo de base de datos:', error);
+  }
+}
+
+// Llamar a la función para cargar la base de datos al iniciar
+loadDatabase();
+
+function saveDatabase() {
+  try {
+    const jsonData = JSON.stringify(data, null, 2);
+    fs.writeFileSync(databaseFile, jsonData, 'utf8');
+  } catch (error) {
+    console.error('Error al guardar la base de datos:', error);
+  }
+}
+
+// Función para agregar un nuevo usuario
+function newuser(username) {
+  if (!data.user[username]) {
+    data.user[username] = { gold: 0, total: 0 };
+    saveDatabase();
+    console.log(`Nuevo usuario '${username}' agregado.`);
+    return `Nuevo usuario '${username}' agregado.`;
+  } else {
+    console.log(`El usuario '${username}' ya existe.`);
+    return `El usuario '${username}' ya existe.`;
+  }
+}
+
+// Función para actualizar (sumar) el saldo de oro de un usuario
+function newgold(username, amount) {
+  if (data.user[username]) {
+    data.user[username].gold += amount; // Se suma la cantidad al oro actual
+    saveDatabase();
+    console.log(`Saldo de '${username}' actualizado: ${data.user[username].gold}`);
+    return `Saldo de '${username}' actualizado: ${data.user[username].gold}`;
+  } else {
+    console.log(`El usuario '${username}' no existe.`);
+    return `El usuario '${username}' no existe.`;
+  }
+}
+
+// Función para restar saldo de un usuario
+function menosgold(username, amount) {
+  if (data.user[username]) {
+    if (data.user[username].gold >= amount) {
+      data.user[username].gold -= amount; // Se resta la cantidad al oro actual
+      data.total += amount; // Se suma al total global
+      data.user[username].total += amount; // Se suma al total del usuario
+      saveDatabase();
+      console.log(`Saldo de '${username}' actualizado: ${data.user[username].gold}`);
+      return `Saldo de '${username}' actualizado: ${data.user[username].gold}`;
+    } else {
+      return `El usuario '${username}' no tiene suficiente saldo.`;
+    }
+  } else {
+    console.log(`El usuario '${username}' no existe.`);
+    return `El usuario '${username}' no existe.`;
+  }
+}
+
+// Función para mostrar el saldo de un usuario
+function saldo(username) {
+  if (data.user[username]) {
+    return data.user[username].gold;
+  } else {
+    console.log(`El usuario '${username}' no existe.`);
+    return `El usuario '${username}' no existe.`;
+  }
+}
+
+// Función para obtener todos los usuarios
+function listarUsuarios() {
+  return Object.keys(data.user);
+}
+
+// Función para mostrar el total de APIs usadas por un usuario
+function totalapis(username) {
+  if (data.user[username]) {
+    return data.user[username].total;
+  } else {
+    return `El usuario '${username}' no existe.`;
+  }
+}
+
+// Función para mostrar el total global
+function totaluser() {
+  return data.total;
+}
+
+// Función para verificar si un usuario existe
+function userExists(username) {
+  return data.user.hasOwnProperty(username);
+}
+
+// Exportar funciones
+module.exports = {
+  newuser,
+  newgold,
+  saldo,
+  loadDatabase,
+  menosgold,
+  saveDatabase,
+  userExists,
+  totalapis,
+  totaluser,
+  listarUsuarios // Nueva función exportada
+};

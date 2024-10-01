@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Información de Películas</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #ff5722;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .generate-btn, .publish-btn, .copy-btn {
+            display: inline-block;
+            padding: 10px 15px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #ff5722;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .generate-btn:hover, .publish-btn:hover, .copy-btn:hover {
+            background-color: #e64a19;
+        }
+        .result-panel, .movie-list-panel, .message-panel {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            display: none; /* Ocultar por defecto */
+        }
+        .message-panel.success {
+            border-color: #4caf50;
+            color: #4caf50;
+        }
+        .message-panel.error {
+            border-color: #f44336;
+            color: #f44336;
+        }
+        pre {
+            background-color: #272822;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .movie-list {
+            display: flex;
+            flex-direction: column;
+        }
+        .movie-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #fff;
+            transition: background-color 0.3s;
+        }
+        .movie-item:hover {
+            background-color: #f1f1f1;
+        }
+        .movie-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        .movie-info {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .movie-info img {
+            width: 100px;
+            height: auto;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Información de Películas</h1>
+        <div class="input-group">
+            <label for="movie-search">Buscar película (por título):</label>
+            <input type="text" id="movie-search" placeholder="Buscar película...">
+            <button class="generate-btn" onclick="searchMovie()">Buscar</button>
+        </div>
+
+        <div class="movie-list-panel" id="movie-list-panel">
+            <h2>Películas Encontradas:</h2>
+            <div class="movie-list" id="movie-list"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="movie-id">ID de la película:</label>
+            <input type="text" id="movie-id" placeholder="Ingresar ID de la película">
+        </div>
+
+        <div class="input-group">
+            <label for="iframe-url">URL del iframe:</label>
+            <input type="text" id="iframe-url" placeholder="Ingresar URL del iframe">
+        </div>
+
+        <button class="generate-btn" onclick="generateJSON()">Generar JSON</button>
+        <button class="publish-btn" onclick="publishMovie()">Publicar</button>
+
+        <div class="result-panel" id="result-panel">
+            <h2>Resultado:</h2>
+            <pre id="json-output" class="language-json"></pre>
+            <button class="copy-btn" onclick="copyToClipboard()">Copiar JSON</button>
+        </div>
+
+        <div class="message-panel" id="message-panel">
+            <p id="message-text"></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>
+        const apiKey = '1f098c7d68777348425d008055475b88'; // Reemplaza con tu API Key de TMDb
+        let movieData; // Variable para almacenar los datos de la película
+
+        function searchMovie() {
+            const movieSearch = document.getElementById('movie-search').value;
+
+            fetch(`https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&language=es-MX&query=${encodeURIComponent(movieSearch)}`)
+                .then(response => response.json())
+                .then(data => {
+                    const movieList = document.getElementById('movie-list');
+                    movieList.innerHTML = ''; // Limpiar lista anterior
+                    if (data.results.length > 0) {
+                        data.results.forEach(movie => {
+                            const movieItem = document.createElement('div');
+                            movieItem.classList.add('movie-item');
+                            movieItem.innerHTML = `
+                                <div class="movie-info">
+                                    <img src="https://image.tmdb.org/t/p/w300${movie.poster_path}" alt="${movie.title}" class="movie-img">
+                                    <div>
+                                        <strong>${movie.title}</strong> <br>
+                                        <small>ID: ${movie.id}</small>
+                                        <button onclick="selectMovie(${movie.id}, '${movie.title}')">Seleccionar</button>
+                                    </div>
+                                </div>
+                            `;
+                            movieList.appendChild(movieItem);
+                        });
+                        document.getElementById('movie-list-panel').style.display = 'block'; // Mostrar panel de películas
+                    } else {
+                        showMessage('No se encontraron películas.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('Hubo un error al buscar la película.', 'error');
+                });
+        }
+
+        function selectMovie(id, title) {
+            document.getElementById('movie-id').value = id; // Asignar ID de película al input
+            document.getElementById('movie-search').value = title; // Asignar título al input de búsqueda
+            document.getElementById('movie-list-panel').style.display = 'none'; // Ocultar lista de películas
+        }
+
+        function generateJSON() {
+            const movieId = document.getElementById('movie-id').value;
+            const iframeUrl = document.getElementById('iframe-url').value;
+
+            if (!movieId || !iframeUrl) {
+                showMessage('Por favor, completa todos los campos.', 'error');
+                return;
+            }
+
+            fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&language=es-MX`)
+                .then(response => response.json())
+                .then(data => {
+                    const res = btoa('https://playerwish.com/e/' + iframeUrl);
+                    movieData = {
+                        titulo: data.title,
+                        imb: data.id,
+                        img: `https://image.tmdb.org/t/p/w300${data.poster_path}`,
+                        url: 'https://vpn-movie-ofc.blogspot.com/2024/05/embed_27.html?r=' + res,
+                        categoria: data.genres.map(genre => genre.name),
+                    };
+
+                    document.getElementById('json-output').textContent = JSON.stringify(movieData, null, 2);
+                    Prism.highlightAll(); // Resaltar sintaxis
+                    document.getElementById('result-panel').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('Hubo un error al generar el JSON.', 'error');
+                });
+        }
+
+        function publishMovie() {
+    if (!movieData) {
+        showMessage('No hay datos de película para publicar.', 'error');
+        return;
+    }
+
+    fetch('publish', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(movieData), // Envía el JSON de la película
+    })
+    .then(response => {
+        if (response.ok) {
+            showMessage('Película publicada correctamente.', 'success');
+        } else {
+            throw new Error('Error al publicar la película.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Hubo un error al publicar la película.', 'error');
+    });
+}
+
+        function copyToClipboard() {
+            const jsonOutput = document.getElementById('json-output');
+            const textArea = document.createElement('textarea');
+            textArea.value = jsonOutput.textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showMessage('JSON copiado al portapapeles.', 'success');
+        }
+
+        function showMessage(text, type) {
+            const messagePanel = document.getElementById('message-panel');
+            const messageText = document.getElementById('message-text');
+
+            messageText.textContent = text;
+            messagePanel.className = 'message-panel ' + (type === 'success' ? 'success' : 'error');
+            messagePanel.style.display = 'block';
+
+            setTimeout(() => {
+                messagePanel.style.display = 'none';
+            }, 3000); // Ocultar mensaje después de 3 segundos
+        }
+    </script>
+</body>
+</html>
